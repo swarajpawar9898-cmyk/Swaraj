@@ -1,0 +1,25 @@
+<html>
+<head>
+<title>javascript</title>
+<script>
+
+function display(){
+var age = document.getElementById("age").value;
+if(age>=18)
+{
+document.getElementById("obj").innerHTML=" eligible";
+}
+else
+{
+document.getElementById("obj").innerHTML="not eligible";
+}
+
+}
+</script>
+</head>
+<body>
+<h6>enter age=<input type="number" id="age"></h6>
+<button onclick="display ()">Show Object</button>
+<p id="obj"></p>
+</body>
+</html>

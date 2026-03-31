@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Event Management</title>
+
+  <style>
+    /* 🌈 Animated Gradient Background */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      background: linear-gradient(-45deg, #1e3c72, #2a5298, #6a11cb, #2575fc);
+      background-size: 400% 400%;
+      animation: gradientBG 10s ease infinite;
+      color: white;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Navbar */
+    nav {
+      background: rgba(0,0,0,0.6);
+      padding: 10px;
+      backdrop-filter: blur(10px);
+    }
+
+    nav button {
+      margin: 5px;
+      padding: 8px 12px;
+      background: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    /* Container */
+    .container {
+      padding: 20px;
+    }
+
+    /* Glass Cards */
+    .card {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    /* Inputs */
+    input {
+      display: block;
+      margin: 10px 0;
+      padding: 10px;
+      width: 100%;
+      border-radius: 5px;
+      border: none;
+    }
+
+    /* Buttons */
+    button.action {
+      background: #ff9800;
+      color: white;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: 0.3s;
+    }
+
+    button.action:hover {
+      background: #e68900;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<nav>
+  <button onclick="showPage('home')">Home</button>
+  <button onclick="showPage('login')">Login</button>
+  <button onclick="showPage('register')">Register</button>
+  <button onclick="showPage('dashboard')">Dashboard</button>
+  <button onclick="showPage('admin')">Admin</button>
+</nav>
+
+<div class="container">
+
+  <!-- HOME -->
+  <div id="home">
+    <h2>All Events</h2>
+    <div id="events"></div>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="login" class="hidden">
+    <h2>Login</h2>
+    <input id="loginEmail" placeholder="Email">
+    <input id="loginPassword" type="password" placeholder="Password">
+    <button class="action" onclick="login()">Login</button>
+  </div>
+
+  <!-- REGISTER -->
+  <div id="register" class="hidden">
+    <h2>Register</h2>
+    <input id="name" placeholder="Name">
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+    <button class="action" onclick="register()">Register</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="hidden">
+    <h2>My Events</h2>
+    <div id="myEvents"></div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="admin" class="hidden">
+    <h2>Create Event</h2>
+    <input id="title" placeholder="Title">
+    <input id="date" placeholder="Date">
+    <input id="venue" placeholder="Venue">
+    <button class="action" onclick="createEvent()">Create Event</button>
+  </div>
+
+</div>
+
+<script>
+const API = "http://localhost:5000/api";
+
+// Page Switch
+function showPage(page) {
+  document.querySelectorAll(".container > div").forEach(div => div.classList.add("hidden"));
+  document.getElementById(page).classList.remove("hidden");
+
+  if (page === "home") loadEvents();
+  if (page === "dashboard") loadMyEvents();
+}
+
+// Load Events
+async function loadEvents() {
+  try {
+    const res = await fetch(API + "/events");
+    const data = await res.json();
+
+    document.getElementById("events").innerHTML = data.map(e => `
+      <div class="card">
+        <h3>${e.title}</h3>
+        <p>${e.date} | ${e.venue}</p>
+        <button class="action" onclick="registerEvent('${e._id}')">Register</button>
+      </div>
+    `).join("");
+  } catch {
+    document.getElementById("events").innerHTML = "⚠️ Backend not connected";
+  }
+}
+
+// Register
+async function register() {
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  await fetch(API + "/register", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ name, email, password })
+  });
+
+  alert("Registered Successfully");
+}
+
+// Login
+async function login() {
+  const email = document.getElementById("loginEmail").value;
+  const password = document.getElementById("loginPassword").value;
+
+  const res = await fetch(API + "/login", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ email, password })
+  });
+
+  const data = await res.json();
+  localStorage.setItem("token", data.token);
+
+  alert("Login Successful");
+}
+
+// Register Event
+async function registerEvent(eventId) {
+  await fetch(API + "/register-event", {
+    method: "POST",
+    headers: {
+      "Content-Type":"application/json",
+      "Authorization": "Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({ eventId })
+  });
+
+  alert("Event Registered!");
+}
+
+// My Events
+async function loadMyEvents() {
+  const res = await fetch(API + "/my-events", {
+    headers: {
+      "Authorization": "Bearer " + localStorage.getItem("token")
+    }
+  });
+
+  const data = await res.json();
+
+  document.getElementById("myEvents").innerHTML = data.map(e => `
+    <div class="card">
+      <h3>${e.title}</h3>
+      <p>${e.date}</p>
+    </div>
+  `).join("");
+}
+
+// Create Event
+async function createEvent() {
+  const title = document.getElementById("title").value;
+  const date = document.getElementById("date").value;
+  const venue = document.getElementById("venue").value;
+
+  await fetch(API + "/events", {
+    method: "POST",
+    headers: {
+      "Content-Type":"application/json",
+      "Authorization": "Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({ title, date, venue })
+  });
+
+  alert("Event Created!");
+}
+
+// Initial Load
+loadEvents();
+</script>
+
+</body>
+</html>
